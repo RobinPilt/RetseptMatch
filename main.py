@@ -223,6 +223,7 @@ class RetseptMatchApp(ctk.CTk):
         sobivus_protsent = arvuta_sobivus(retsept['koostisosad'], kasutaja_koostisosad)
         retsept_koostisosad = set(retsept['koostisosad'].split(', '))
         puuduolevad_koostisosad = retsept_koostisosad - set(kasutaja_koostisosad)
+        olemasolevad_koostisosad = retsept_koostisosad.intersection(set(kasutaja_koostisosad))
 
         # Kuvame detailse vaate
         self.jah_retseptid_frame.pack_forget()
@@ -233,14 +234,14 @@ class RetseptMatchApp(ctk.CTk):
         self.detailne_retsept_label = ctk.CTkLabel(self.detailne_retsept_frame, text=retsept['retsept'], font=("Arial", 16))
         self.detailne_retsept_label.pack(pady=10)
 
-        self.detailne_retsept_koostisosad = ctk.CTkLabel(self.detailne_retsept_frame, text=f"Koostisosad: {retsept['koostisosad']}", font=("Arial", 14))
-        self.detailne_retsept_koostisosad.pack(pady=10)
-
         self.detailne_retsept_juhised = ctk.CTkLabel(self.detailne_retsept_frame, text=f"Juhised: {retsept['juhised']}", font=("Arial", 14))
         self.detailne_retsept_juhised.pack(pady=10)
 
         self.sobivus_label = ctk.CTkLabel(self.detailne_retsept_frame, text=f"Sobivus: {sobivus_protsent:.2f}%", font=("Arial", 14))
         self.sobivus_label.pack(pady=10)
+
+        self.olemasolevad_label = ctk.CTkLabel(self.detailne_retsept_frame, text=f"Olemasolevad koostisosad: {', '.join(olemasolevad_koostisosad)}", font=("Arial", 14))
+        self.olemasolevad_label.pack(pady=10)
 
         self.puuduolevad_label = ctk.CTkLabel(self.detailne_retsept_frame, text=f"Puuduolevad koostisosad: {', '.join(puuduolevad_koostisosad)}", font=("Arial", 14))
         self.puuduolevad_label.pack(pady=10)
