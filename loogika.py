@@ -1,5 +1,4 @@
-#Siia tuleb programmi loogikat hõlmavad funktsioonid.
-#Näiteks algoritm, mis arvutab kasutaja sisestatud andmete põhjal välja sobivama retsepti.
+#Siin asuvad programmi loogikat hõlmavad funktsioonid.
 
 import requests
 import unicodedata
