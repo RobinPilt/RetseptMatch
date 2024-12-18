@@ -10,7 +10,8 @@
 #
 # Mõningane eeskuju: Tinder
 #
-# Lisakommentaar: Lae alla kõik vajalikud dependencied ja käivita main.py
+# Lisakommentaar: Lae alla kõik vajalikud dependecies (nimekirja leiab requirements.txt failist) 
+# ja käivita main.py
 #
 ##################################################
 
