@@ -20,7 +20,7 @@ import tkinter as tk
 from tkinter import ttk
 import pandas as pd
 from PIL import Image
-from loogika import lisa_koostisosa, saa_koostisosad, lisa_jah_retsept, lisa_ei_retsept, arvuta_sobivus, sorteeri_retseptid
+from loogika import lisa_koostisosa, saa_koostisosad, lisa_jah_retsept, lisa_ei_retsept, arvuta_sobivus, sorteeri_retseptid, kuva_puuduolevad_koostisosad_hinnad
 
 class RetseptMatchApp(ctk.CTk):
     def __init__(self):
@@ -215,7 +215,7 @@ class RetseptMatchApp(ctk.CTk):
                 detailid_nupp.pack(side="right", padx=10)
 
     def kuva_jah_retsepti_detailid(self, retsept_nimi):
-        # Leia retsept andmebaasist
+        # Leia retsept CSV failist
         retsept = self.retseptid[self.retseptid['retsept'] == retsept_nimi].iloc[0]
 
         # Arvuta sobivus ja puuduolevad koostisosad
@@ -246,9 +246,14 @@ class RetseptMatchApp(ctk.CTk):
         self.puuduolevad_label = ctk.CTkLabel(self.detailne_retsept_frame, text=f"Puuduolevad koostisosad: {', '.join(puuduolevad_koostisosad)}", font=("Arial", 14))
         self.puuduolevad_label.pack(pady=10)
 
+        # Kuvame puuduolevate koostisosade hinnad
+        hinnad = kuva_puuduolevad_koostisosad_hinnad(puuduolevad_koostisosad)
+        hinnad_tekst = "\n".join([f"{koostisosa}: {hind}" for koostisosa, hind in hinnad.items()])
+        self.hinnad_label = ctk.CTkLabel(self.detailne_retsept_frame, text=f"Puuduolevate koostisosade hinnad:\n{hinnad_tekst}", font=("Arial", 14))
+        self.hinnad_label.pack(pady=10)
+
         self.tagasi_nupp = ctk.CTkButton(self.detailne_retsept_frame, text="Tagasi", command=self.tagasi_jah_retseptid_leht)
         self.tagasi_nupp.pack(pady=20)
-
 
     def tagasi_jah_retseptid_leht(self):
         self.detailne_retsept_frame.pack_forget()

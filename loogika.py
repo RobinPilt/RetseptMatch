@@ -1,9 +1,14 @@
 # Siia tuleb programmi loogikat hõlmavad funktsioonid.
 # Näiteks algoritm, mis arvutab kasutaja sisestatud andmete põhjal välja sobivama retsepti.
 
+import requests
+import unicodedata
+from bs4 import BeautifulSoup
+
 koostisosad_list = []
 jah_retseptid = []
 ei_retseptid = []
+salvestatud_hinnad = {}
 
 def lisa_koostisosa(koostisosa):
     koostisosad_list.append(koostisosa)
@@ -34,3 +39,40 @@ def sorteeri_retseptid(retseptid, kasutaja_koostisosad):
     retseptid['sobivus'] = retseptid['koostisosad'].apply(lambda x: arvuta_sobivus(x, kasutaja_koostisosad))
     sorteeritud_retseptid = retseptid[retseptid['sobivus'] >= 30].sort_values(by='sobivus', ascending=False)
     return sorteeritud_retseptid
+
+def sorteeri_retseptid(retseptid, kasutaja_koostisosad):
+    retseptid['sobivus'] = retseptid['koostisosad'].apply(lambda x: arvuta_sobivus(x, kasutaja_koostisosad))
+    sorteeritud_retseptid = retseptid[retseptid['sobivus'] >= 30].sort_values(by='sobivus', ascending=False)
+    return sorteeritud_retseptid
+
+def teisenda_tapitahed(tekst):
+    return ''.join((c for c in unicodedata.normalize('NFD', tekst) if unicodedata.category(c) != 'Mn'))
+
+def leia_koostisosa_hind(koostisosa):
+    if koostisosa in salvestatud_hinnad:
+        return salvestatud_hinnad[koostisosa]
+    
+    koostisosa_url = teisenda_tapitahed(koostisosa)
+    url = f"https://ostukorvid.ee/kategooriad/{koostisosa_url}?price=item"
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    # Otsime esimese tulemuse hinna ja poe
+    hind_elem = soup.find('div', class_='text-xl font-bold')
+    pood_elem = soup.find('span', class_=lambda x: x and x.startswith('inline-block whitespace-nowrap rounded px-1 text-center text-xs font-bold uppercase'))
+    
+    if hind_elem and pood_elem:
+        hind = hind_elem.text.strip().replace('▼', '').strip()
+        pood = pood_elem.text.strip()
+        hind_pood = f"{hind} ({pood})"
+        salvestatud_hinnad[koostisosa] = hind_pood
+        return hind_pood
+    else:
+        return "Hind puudub"
+
+def kuva_puuduolevad_koostisosad_hinnad(puuduolevad_koostisosad):
+    hinnad = {}
+    for koostisosa in puuduolevad_koostisosad:
+        hind = leia_koostisosa_hind(koostisosa)
+        hinnad[koostisosa] = hind
+    return hinnad
