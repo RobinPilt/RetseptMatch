@@ -1,5 +1,5 @@
-# Siia tuleb programmi loogikat hõlmavad funktsioonid.
-# Näiteks algoritm, mis arvutab kasutaja sisestatud andmete põhjal välja sobivama retsepti.
+#Siia tuleb programmi loogikat hõlmavad funktsioonid.
+#Näiteks algoritm, mis arvutab kasutaja sisestatud andmete põhjal välja sobivama retsepti.
 
 import requests
 import unicodedata
@@ -28,6 +28,7 @@ def lisa_ei_retsept(retsept):
 def saa_ei_retseptid():
     return ei_retseptid
 
+#Arvutame retsepti sobivuse kasutaja koostisosadega
 def arvuta_sobivus(retsept_koostisosad, kasutaja_koostisosad):
     retsept_koostisosad = set(retsept_koostisosad.split(', '))
     kasutaja_koostisosad = set(kasutaja_koostisosad)
@@ -35,19 +36,16 @@ def arvuta_sobivus(retsept_koostisosad, kasutaja_koostisosad):
     sobivus_protsent = (len(kattuvus) / len(retsept_koostisosad)) * 100
     return sobivus_protsent
 
+#Sorteerime retseptid sobivuse järgi
 def sorteeri_retseptid(retseptid, kasutaja_koostisosad):
     retseptid['sobivus'] = retseptid['koostisosad'].apply(lambda x: arvuta_sobivus(x, kasutaja_koostisosad))
-    sorteeritud_retseptid = retseptid[retseptid['sobivus'] >= 30].sort_values(by='sobivus', ascending=False)
-    return sorteeritud_retseptid
-
-def sorteeri_retseptid(retseptid, kasutaja_koostisosad):
-    retseptid['sobivus'] = retseptid['koostisosad'].apply(lambda x: arvuta_sobivus(x, kasutaja_koostisosad))
-    sorteeritud_retseptid = retseptid[retseptid['sobivus'] >= 30].sort_values(by='sobivus', ascending=False)
+    sorteeritud_retseptid = retseptid[retseptid['sobivus'] >= 50].sort_values(by='sobivus', ascending=False)
     return sorteeritud_retseptid
 
 def teisenda_tapitahed(tekst):
     return ''.join((c for c in unicodedata.normalize('NFD', tekst) if unicodedata.category(c) != 'Mn'))
 
+#Scrape-ime koostisosade hinnad
 def leia_koostisosa_hind(koostisosa):
     if koostisosa in salvestatud_hinnad:
         return salvestatud_hinnad[koostisosa]
@@ -57,7 +55,7 @@ def leia_koostisosa_hind(koostisosa):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
     
-    # Otsime esimese tulemuse hinna ja poe
+    #Otsime esimese tulemuse hinna ja poe
     hind_elem = soup.find('div', class_='text-xl font-bold')
     pood_elem = soup.find('span', class_=lambda x: x and x.startswith('inline-block whitespace-nowrap rounded px-1 text-center text-xs font-bold uppercase'))
     
