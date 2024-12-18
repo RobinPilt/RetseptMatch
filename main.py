@@ -17,14 +17,22 @@
 import customtkinter as ctk
 from customtkinter import CTkImage
 import tkinter as tk
-from tkinter import ttk
 import pandas as pd
 from PIL import Image
-from loogika import lisa_koostisosa, saa_koostisosad, lisa_jah_retsept, lisa_ei_retsept, arvuta_sobivus, sorteeri_retseptid, kuva_puuduolevad_koostisosad_hinnad
+from loogika import saa_koostisosad, lisa_jah_retsept, lisa_ei_retsept, arvuta_sobivus, sorteeri_retseptid, kuva_puuduolevad_koostisosad_hinnad
 
 class RetseptMatchApp(ctk.CTk):
     def __init__(self):
         super().__init__()
+
+        # Set CustomTkinter appearance mode to light theme
+        ctk.set_appearance_mode("light")
+        ctk.set_default_color_theme("green")
+
+        self.resizable(False, False)
+
+        # Laadi kohandatud font
+        self.segoe_font = ctk.CTkFont(family="Segoe UI Semilight", size=14)
 
         self.title("RetseptMatch")
         self.geometry("800x600")
@@ -42,55 +50,78 @@ class RetseptMatchApp(ctk.CTk):
         self.avaleht()
 
     def lae_koostisosad(self):
-        df = pd.read_csv('ressursid/andmed/koostisosad.csv')
-        return df['koostisosa'].tolist()
+        csv_fail = pd.read_csv('ressursid/andmed/koostisosad.csv')
+        return csv_fail['koostisosa'].tolist()
     
     def lae_retseptid(self):
-        df = pd.read_csv('ressursid/andmed/retseptid.csv')
-        return df
+        csv_fail = pd.read_csv('ressursid/andmed/retseptid.csv')
+        return csv_fail
 
     # Avalehe elemendid
     def avaleht(self):
+        # Create a frame for the main section
+        self.main_section = ctk.CTkFrame(self.main_frame)
+        self.main_section.pack(pady=20, padx=20, fill="both", expand=True)
+
+        # Create a frame for the left section (koostisosade lisamise sektsioon)
+        self.left_frame = ctk.CTkFrame(self.main_section)
+        self.left_frame.pack(side="left", padx=20, pady=20, fill="y", expand=True)
+
+        # Create a frame for the right section (lisatud koostisosade sektsioon)
+        self.right_frame = ctk.CTkFrame(self.main_section)
+        self.right_frame.pack(side="right", padx=20, pady=20, fill="y", expand=True)
+
         # Koostisosade sisestamise sektsioon
-        self.koostisosa_label = ctk.CTkLabel(self.main_frame, text="Sisesta koostisosad:")
+        self.koostisosa_label = ctk.CTkLabel(self.left_frame, text="Sisesta koostisosad:", font=self.segoe_font)
         self.koostisosa_label.pack(pady=10)
 
-        self.koostisosad_var = ctk.StringVar(value="Vali toiduaine")
-        self.koostisosa_menu = ctk.CTkComboBox(self.main_frame, variable=self.koostisosad_var, values=self.koostisosad)
-        self.koostisosa_menu.pack(pady=10)
-        self.koostisosa_menu.bind('<KeyRelease>', self.filtreeri_koostisosad)
+        # Search box for koostisosad
+        self.search_var = tk.StringVar()
+        self.search_box = ctk.CTkEntry(self.left_frame, textvariable=self.search_var, font=self.segoe_font)
+        self.search_box.pack(pady=10)
+        self.search_box.bind('<KeyRelease>', self.filtreeri_koostisosad)
 
-        self.lisa_nupp = ctk.CTkButton(self.main_frame, text="Lisa", command=self.lisa_koostisosa_main)
-        self.lisa_nupp.pack(pady=10)
+        # Scrollable frame for koostisosad
+        self.scrollable_frame = ctk.CTkScrollableFrame(self.left_frame, width=200, height=400, corner_radius=0)
+        self.scrollable_frame.pack(pady=10)
 
-        self.tekst_label = ctk.CTkLabel(self.main_frame, text="")
+        # Add koostisosad to scrollable frame
+        self.koostisosa_buttons = []
+        for koostisosa in self.koostisosad:
+            button = ctk.CTkButton(self.scrollable_frame, text=koostisosa, command=lambda k=koostisosa: self.lisa_koostisosa_main(k), font=self.segoe_font)
+            button.pack(pady=5)
+            self.koostisosa_buttons.append(button)
+
+        self.tekst_label = ctk.CTkLabel(self.left_frame, text="", font=self.segoe_font)
         self.tekst_label.pack(pady=10)
 
         # Kuvame lisatud koostisosad
-        self.koostisosad_frame = ctk.CTkFrame(self.main_frame)
-        self.koostisosad_frame.pack(pady=10)
-        self.koostisosad_label = ctk.CTkLabel(self.koostisosad_frame, text="Lisatud koostisosad:")
+        self.koostisosad_label = ctk.CTkLabel(self.right_frame, text="Lisatud koostisosad:", font=self.segoe_font)
         self.koostisosad_label.pack(pady=10)
-        self.koostisosad_listbox = tk.Listbox(self.koostisosad_frame, height=10, width=50)
+
+        # Muuda tk.Listbox ctk.CTkTextbox'iks
+        self.koostisosad_listbox = ctk.CTkTextbox(self.right_frame, height=300, width=200, font=self.segoe_font, corner_radius=0)
         self.koostisosad_listbox.pack(pady=10)
+        self.koostisosad_listbox.configure(state="disabled")  # Disable editing
 
         # Nupp retseptide hindamise lehele liikumiseks
-        self.retsept_nupp = ctk.CTkButton(self.main_frame, text="Leia oma retsept!", command=self.retsept_leht)
-        self.retsept_nupp.pack(pady=20)
+        self.retsept_nupp = ctk.CTkButton(self.right_frame, text="Leia oma retsept!", command=self.retsept_leht, font=self.segoe_font)
+        self.retsept_nupp.pack(side="bottom", pady=20)
+
 
     def filtreeri_koostisosad(self, event):
-        väärtus = event.widget.get()
-        if väärtus == '':
-            self.koostisosa_menu['values'] = self.koostisosad
-        else:
-            andmed = []
-            for item in self.koostisosad:
-                if väärtus.lower() in item.lower():
-                    andmed.append(item)
-            self.koostisosa_menu['values'] = andmed
+        search_term = self.search_var.get().lower()
+    
+        for button in self.koostisosa_buttons:
+            button.pack_forget()  # Hide all buttons first
 
-    def lisa_koostisosa_main(self):
-        koostisosa = self.koostisosad_var.get()
+        for button in self.koostisosa_buttons:
+            if search_term in button.cget("text").lower():
+                button.pack(pady=5)  # Show only matching buttons
+            else:
+                button.pack_forget()
+
+    def lisa_koostisosa_main(self, koostisosa):
         if koostisosa in self.koostisosad:
             # Lisa koostisosa järjendisse loogika.py failis
             from loogika import lisa_koostisosa
@@ -98,7 +129,9 @@ class RetseptMatchApp(ctk.CTk):
             tekst = f"Koostisosa lisatud: {koostisosa}."
             print(tekst)
             self.tekst_label.configure(text=tekst)
-            self.koostisosad_listbox.insert(tk.END, koostisosa)  # Lisa koostisosa listboxi
+            self.koostisosad_listbox.configure(state="normal")  # Enable editing to add text
+            self.koostisosad_listbox.insert(tk.END, f"{koostisosa}\n")  # Lisa koostisosa uuele reale
+            self.koostisosad_listbox.configure(state="disabled")  # Disable editing again
         else:
             tekst = f"Koostisosa '{koostisosa}' ei ole lubatud."
             print(tekst)
@@ -111,27 +144,17 @@ class RetseptMatchApp(ctk.CTk):
         self.retsept_frame = ctk.CTkFrame(self)
         self.retsept_frame.pack(pady=20, padx=60, fill="both", expand=True)
 
-        self.retsept_label = ctk.CTkLabel(self.retsept_frame, text="Retseptid:", font=("Arial", 16))
-        self.retsept_label.pack(pady=10)
-
-        self.retsept_pealkiri = ctk.CTkLabel(self.retsept_frame, text="", font=("Arial", 14))
+        self.retsept_pealkiri = ctk.CTkLabel(self.retsept_frame, text="", font=self.segoe_font)
         self.retsept_pealkiri.pack(pady=10)
 
         self.retsept_pilt_label = ctk.CTkLabel(self.retsept_frame, text="")
         self.retsept_pilt_label.pack(pady=10)
 
-        self.juhised_nupp = ctk.CTkButton(self.retsept_frame, text="Kuva juhised", command=self.rohkem_infot)
-        self.juhised_nupp.pack(pady=10)
+        self.jah_nupp = ctk.CTkButton(self.retsept_frame, text="Jah", command=self.jah_action, width=50, height=50)
+        self.jah_nupp.place(x=50, y=300)  # Absoluutne positsioneerimine
 
-        self.retsepti_tekst = ctk.CTkTextbox(self.retsept_frame, height=400, width=300)
-        self.retsepti_tekst.pack(pady=10)
-        self.retsepti_tekst.pack_forget()  # Peidame alguses
-
-        self.jah_nupp = ctk.CTkButton(self.retsept_frame, text="Jah", command=self.jah_action)
-        self.jah_nupp.pack(side=tk.LEFT, padx=20, pady=10)
-
-        self.ei_nupp = ctk.CTkButton(self.retsept_frame, text="Ei", command=self.ei_action)
-        self.ei_nupp.pack(side=tk.RIGHT, padx=20, pady=10)
+        self.ei_nupp = ctk.CTkButton(self.retsept_frame, text="Ei", command=self.ei_action, width=50, height=50)
+        self.ei_nupp.place(x=700, y=300)  # Absoluutne positsioneerimine
 
         # Sorteeri ja filtreeri retseptid sobivuse järgi
         kasutaja_koostisosad = saa_koostisosad()
@@ -153,35 +176,29 @@ class RetseptMatchApp(ctk.CTk):
 
             self.retsept_pilt_label.configure(image=foto, text="")
             self.retsept_pilt_label.image = foto
-
-            self.retsepti_tekst.pack_forget()
-            self.juhised_nupp.pack(pady=10)
-            self.jah_nupp.pack(side=tk.LEFT, padx=20, pady=10)
-            self.ei_nupp.pack(side=tk.RIGHT, padx=20, pady=10)
+            
+            self.jah_nupp.pack(side=tk.LEFT, padx=20)
+            self.ei_nupp.pack(side=tk.RIGHT, padx=20)
 
             # Arvuta ja kuva sobivus protsentuaalselt
             kasutaja_koostisosad = saa_koostisosad()
             sobivus_protsent = arvuta_sobivus(retsept['koostisosad'], kasutaja_koostisosad)
-            print(f"Sobivus retseptiga '{retsept['retsept']}': {sobivus_protsent:.2f}%")
 
-            # Kuvame sobivuse protsendi UI-s kasti sees
-            if hasattr(self, 'sobivus_frame'):
-                self.sobivus_label.configure(text=f"Sobivus: {sobivus_protsent:.2f}%")
-            else:
-                self.sobivus_frame = ctk.CTkFrame(self.retsept_frame)
-                self.sobivus_frame.pack(pady=10)
-                self.sobivus_label = ctk.CTkLabel(self.sobivus_frame, text=f"Sobivus: {sobivus_protsent:.2f}%")
-                self.sobivus_label.pack(pady=10)
-            
+            self.sobivus_frame = ctk.CTkFrame(self.retsept_frame)
+            self.sobivus_frame.place(x=400, y=40)  # Absoluutne positsioneerimine pildi elemendi peal
+
+            self.sobivus_label = ctk.CTkLabel(self.sobivus_frame, text=f"{sobivus_protsent:.0f}%", font=ctk.CTkFont(family="Segoe UI Bold", size=30))
+            self.sobivus_label.pack(expand=True)
+                                        
             # Arvuta ja kuva puuduolevad koostisosad
             retsept_koostisosad = set(retsept['koostisosad'].split(', '))
             puuduolevad_koostisosad = retsept_koostisosad - set(kasutaja_koostisosad)
             if hasattr(self, 'puuduolevad_frame'):
-                self.puuduolevad_label.configure(text=f"Puuduolevad koostisosad: {', '.join(puuduolevad_koostisosad)}")
+                self.puuduolevad_label.configure(text=f"Puuduolevad koostisosad: {', '.join(puuduolevad_koostisosad)}", font=self.segoe_font)
             else:
                 self.puuduolevad_frame = ctk.CTkFrame(self.retsept_frame)
                 self.puuduolevad_frame.pack(pady=10)
-                self.puuduolevad_label = ctk.CTkLabel(self.puuduolevad_frame, text=f"Puuduolevad koostisosad: {', '.join(puuduolevad_koostisosad)}")
+                self.puuduolevad_label = ctk.CTkLabel(self.puuduolevad_frame, text=f"Puuduolevad koostisosad: {', '.join(puuduolevad_koostisosad)}", font=self.segoe_font)
                 self.puuduolevad_label.pack(pady=10)
 
         # Kui kõik retseptid on otsas
@@ -197,18 +214,18 @@ class RetseptMatchApp(ctk.CTk):
         self.jah_retseptid_frame = ctk.CTkFrame(self)
         self.jah_retseptid_frame.pack(pady=20, padx=60, fill="both", expand=True)
 
-        self.jah_retseptid_label = ctk.CTkLabel(self.jah_retseptid_frame, text="Jah vastatud retseptid:", font=("Arial", 16))
+        self.jah_retseptid_label = ctk.CTkLabel(self.jah_retseptid_frame, text="Jah vastatud retseptid:", font=self.segoe_font)
         self.jah_retseptid_label.pack(pady=10)
 
         if not self.jah_retseptid:
-            ei_leitud_label = ctk.CTkLabel(self.jah_retseptid_frame, text="Te ei leidnud ühtegi sobilikku retsepti.", font=("Arial", 14))
+            ei_leitud_label = ctk.CTkLabel(self.jah_retseptid_frame, text="Ei leitud ühtegi sobilikku retsepti.", font=self.segoe_font)
             ei_leitud_label.pack(pady=10)
         else:
             for retsept in self.jah_retseptid:
                 retsept_frame = ctk.CTkFrame(self.jah_retseptid_frame)
                 retsept_frame.pack(pady=10, padx=10, fill="x")
 
-                retsept_label = ctk.CTkLabel(retsept_frame, text=retsept, font=("Arial", 14))
+                retsept_label = ctk.CTkLabel(retsept_frame, text=retsept, font=self.segoe_font)
                 retsept_label.pack(side="left", padx=10)
 
                 detailid_nupp = ctk.CTkButton(retsept_frame, text="Kuva detailid", command=lambda r=retsept: self.kuva_jah_retsepti_detailid(r))
@@ -220,7 +237,6 @@ class RetseptMatchApp(ctk.CTk):
 
         # Arvuta sobivus ja puuduolevad koostisosad
         kasutaja_koostisosad = saa_koostisosad()
-        sobivus_protsent = arvuta_sobivus(retsept['koostisosad'], kasutaja_koostisosad)
         retsept_koostisosad = set(retsept['koostisosad'].split(', '))
         puuduolevad_koostisosad = retsept_koostisosad - set(kasutaja_koostisosad)
         olemasolevad_koostisosad = retsept_koostisosad.intersection(set(kasutaja_koostisosad))
@@ -231,25 +247,23 @@ class RetseptMatchApp(ctk.CTk):
         self.detailne_retsept_frame = ctk.CTkFrame(self)
         self.detailne_retsept_frame.pack(pady=20, padx=60, fill="both", expand=True)
 
-        self.detailne_retsept_label = ctk.CTkLabel(self.detailne_retsept_frame, text=retsept['retsept'], font=("Arial", 16))
+        self.detailne_retsept_label = ctk.CTkLabel(self.detailne_retsept_frame, text=retsept['retsept'], font=self.segoe_font)
         self.detailne_retsept_label.pack(pady=10)
 
-        self.detailne_retsept_juhised = ctk.CTkLabel(self.detailne_retsept_frame, text=f"Juhised: {retsept['juhised']}", font=("Arial", 14))
-        self.detailne_retsept_juhised.pack(pady=10)
+        # Muuda juhised CTkLabel'iks koos wraplength omadusega
+        self.detailne_retsept_juhised = ctk.CTkLabel(self.detailne_retsept_frame, text=f"Juhised: {retsept['juhised']}", font=self.segoe_font, wraplength=500)
+        self.detailne_retsept_juhised.pack(pady=10, padx=20, fill="x")
 
-        self.sobivus_label = ctk.CTkLabel(self.detailne_retsept_frame, text=f"Sobivus: {sobivus_protsent:.2f}%", font=("Arial", 14))
-        self.sobivus_label.pack(pady=10)
-
-        self.olemasolevad_label = ctk.CTkLabel(self.detailne_retsept_frame, text=f"Olemasolevad koostisosad: {', '.join(olemasolevad_koostisosad)}", font=("Arial", 14))
+        self.olemasolevad_label = ctk.CTkLabel(self.detailne_retsept_frame, text=f"Olemasolevad koostisosad: {', '.join(olemasolevad_koostisosad)}", font=self.segoe_font)
         self.olemasolevad_label.pack(pady=10)
 
-        self.puuduolevad_label = ctk.CTkLabel(self.detailne_retsept_frame, text=f"Puuduolevad koostisosad: {', '.join(puuduolevad_koostisosad)}", font=("Arial", 14))
+        self.puuduolevad_label = ctk.CTkLabel(self.detailne_retsept_frame, text=f"Puuduolevad koostisosad: {', '.join(puuduolevad_koostisosad)}", font=self.segoe_font)
         self.puuduolevad_label.pack(pady=10)
 
         # Kuvame puuduolevate koostisosade hinnad
         hinnad = kuva_puuduolevad_koostisosad_hinnad(puuduolevad_koostisosad)
         hinnad_tekst = "\n".join([f"{koostisosa}: {hind}" for koostisosa, hind in hinnad.items()])
-        self.hinnad_label = ctk.CTkLabel(self.detailne_retsept_frame, text=f"Puuduolevate koostisosade hinnad:\n{hinnad_tekst}", font=("Arial", 14))
+        self.hinnad_label = ctk.CTkLabel(self.detailne_retsept_frame, text=f"Puuduolevate koostisosade hinnad:\n{hinnad_tekst}", font=self.segoe_font)
         self.hinnad_label.pack(pady=10)
 
         self.tagasi_nupp = ctk.CTkButton(self.detailne_retsept_frame, text="Tagasi", command=self.tagasi_jah_retseptid_leht)
