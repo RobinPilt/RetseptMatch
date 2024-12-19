@@ -44,7 +44,7 @@ def sorteeri_retseptid(retseptid, kasutaja_koostisosad):
 def teisenda_tapitahed(tekst):
     return ''.join((c for c in unicodedata.normalize('NFD', tekst) if unicodedata.category(c) != 'Mn'))
 
-#Scrape-ime koostisosade hinnad
+#Saame koostisosade hinnad internetist (ostukorvid.ee)
 def leia_koostisosa_hind(koostisosa):
     if koostisosa in salvestatud_hinnad:
         return salvestatud_hinnad[koostisosa]
